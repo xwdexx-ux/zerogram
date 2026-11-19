@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Подарки</title>
+<style>
+:root{--bg:#f2f3f7;--card:#fff;--text:#111;--muted:#7a8190;--accent:#2f8cf5;--star:#f5a623;--sel:#e6f1fe;--line:#e3e6ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--card:#1a1d24;--text:#f2f3f5;--muted:#8d95a3;--sel:#1b2c44;--line:#272b34;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1115;--card:#1a1d24;--text:#f2f3f5;--muted:#8d95a3;--sel:#1b2c44;--line:#272b34;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding:14px 14px 110px;max-width:520px;margin:0 auto}
+h1{font-size:22px;margin:6px 0 12px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.bal{display:flex;align-items:center;justify-content:space-between}
+.bal b{font-size:30px;color:var(--star)}
+.lbl{color:var(--muted);font-size:13px;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:none}
+input:focus{border-color:var(--accent)}
+button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--sel);color:var(--accent);font-weight:600}
+button.main{background:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gift{background:var(--bg);border:2px solid transparent;border-radius:14px;padding:12px 4px;text-align:center}
+.gift.on{border-color:var(--accent);background:var(--sel)}
+.gift .e{font-size:38px;line-height:1.1}
+.gift .n{font-size:13px;color:var(--muted)}
+.gift .p{font-size:14px;font-weight:700;color:var(--star)}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.bar button{width:100%;padding:14px;font-size:17px}
+.bar button:disabled{opacity:.45}
+.hist div{padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.hist div:last-child{border:0}
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.fly{position:fixed;bottom:80px;font-size:34px;pointer-events:none;animation:up 1.4s ease-out forwards;z-index:8}
+@keyframes up{to{transform:translateY(-60vh) rotate(25deg);opacity:0}}
+.shake{animation:sh .35s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<h1>🎁 Подарки</h1>
+
+<div class="card bal">
+  <div><div class="lbl">Твой баланс</div><b id="bal">0 ⭐</b></div>
+</div>
+
+<div class="card">
+  <div class="lbl">Выдать себе звёзды (любое количество)</div>
+  <div class="row" style="margin-bottom:8px">
+    <button data-add="100">+100</button><button data-add="500">+500</button><button data-add="1000">+1000</button><button data-add="100000">+100к</button>
+  </div>
+  <div class="row" style="flex-wrap:nowrap">
+    <input id="amt" type="number" inputmode="numeric" placeholder="Своё число">
+    <button class="main" id="give">Выдать</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lbl">Кому отправить</div>
+  <input id="to" placeholder="@username или имя">
+</div>
+
+<div class="card">
+  <div class="lbl">Выбери подарок</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="card hist" id="histCard" hidden>
+  <div class="lbl">Отправлено</div>
+  <div id="hist"></div>
+</div>
+
+<div class="bar"><button class="main" id="send" disabled>Выбери подарок</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var gifts=[["🧸","Мишка",15],["🌹","Роза",25],["🎁","Подарок",50],["🎂","Торт",50],["🍾","Шампанское",75],["🚀","Ракета",100],["💎","Алмаз",100],["🏆","Кубок",100],["💍","Кольцо",250]];
+var bal=0,sel=null;
+var $=function(i){return document.getElementById(i)};
+function fmt(n){return n.toLocaleString("ru-RU")}
+function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");setTimeout(function(){el.classList.remove("show")},2200)}
+function render(){
+  $("bal").textContent=fmt(bal)+" ⭐";
+  var b=$("send");
+  if(sel===null){b.disabled=true;b.textContent="Выбери подарок"}
+  else{b.disabled=false;b.textContent="Отправить "+gifts[sel][0]+" за "+gifts[sel][2]+" ⭐"}
+}
+var grid=$("grid");
+gifts.forEach(function(g,i){
+  var d=document.createElement("div");d.className="gift";
+  d.innerHTML='<div class="e"></div><div class="n"></div><div class="p"></div>';
+  d.children[0].textContent=g[0];d.children[1].textContent=g[1];d.children[2].textContent=g[2]+" ⭐";
+  d.onclick=function(){sel=i;[].forEach.call(grid.children,function(c,j){c.classList.toggle("on",j===i)});render()};
+  grid.appendChild(d);
+});
+function add(n){if(!(n>0))return;bal+=Math.floor(n);render();toast("+"+fmt(Math.floor(n))+" ⭐ зачислено")}
+[].forEach.call(document.querySelectorAll("[data-add]"),function(b){b.onclick=function(){add(+b.dataset.add)}});
+$("give").onclick=function(){add(+$("amt").value);$("amt").value=""};
+function fly(e){for(var i=0;i<10;i++){var f=document.createElement("div");f.className="fly";f.textContent=e;f.style.left=(10+Math.random()*80)+"%";f.style.animationDelay=(Math.random()*.4)+"s";document.body.appendChild(f);setTimeout(function(x){x.remove()},2000,f)}}
+$("send").onclick=function(){
+  var g=gifts[sel],who=$("to").value.trim();
+  if(!who){$("to").classList.add("shake");setTimeout(function(){$("to").classList.remove("shake")},400);toast("Укажи, кому отправить");$("to").focus();return}
+  if(bal<g[2]){$("bal").classList.add("shake");setTimeout(function(){$("bal").classList.remove("shake")},400);toast("Не хватает звёзд, выдай себе ещё");return}
+  bal-=g[2];render();fly(g[0]);toast(g[0]+" "+g[1]+" отправлен: "+who);
+  var h=document.createElement("div");h.textContent=g[0]+" "+g[1]+" → "+who+" · "+g[2]+" ⭐";
+  $("hist").prepend(h);$("histCard").hidden=false;
+};
+render();
+</script>
+</body>
+</html>
